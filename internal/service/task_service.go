@@ -3,6 +3,7 @@ package service
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"task-manager-app/internal/exception"
@@ -19,8 +20,8 @@ type TaskService interface {
 	Move(ctx context.Context, id int, userId int, req web.MoveTaskRequest) web.TaskResponse
 	Delete(ctx context.Context, id int, userId int)
 
-	AssignUser(ctx context.Context, taskId int, userId int, targetUserId int)
-	UnassignUser(ctx context.Context, taskId int, userId int, targetUserId int)
+	AssignUser(ctx context.Context, taskId int, userId int, targetUserId int) []web.UserResponse
+	UnassignUser(ctx context.Context, taskId int, userId int, targetUserId int) []web.UserResponse
 	FindAssignees(ctx context.Context, taskId int, userId int) []web.UserResponse
 }
 
@@ -52,14 +53,25 @@ func (s *taskServiceImpl) assertMemberViaTask(ctx context.Context, taskId int, u
 }
 
 func parseDueDate(strPtr *string) *time.Time {
-	if strPtr == nil || *strPtr == "" {
+	if strPtr == nil {
 		return nil
 	}
-	t, err := time.Parse(time.RFC3339, *strPtr)
-	if err != nil {
-		panic(exception.NewValidationError("due_date must be RFC3339 format"))
+
+	value := strings.TrimSpace(*strPtr)
+	if value == "" {
+		return nil
 	}
-	return &t
+
+	if t, err := time.Parse(time.RFC3339, value); err == nil {
+		return &t
+	}
+
+	if t, err := time.Parse("2006-01-02", value); err == nil {
+		utc := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
+		return &utc
+	}
+
+	panic(exception.NewValidationError("due_date must be YYYY-MM-DD or RFC3339 format"))
 }
 
 func (s *taskServiceImpl) Create(ctx context.Context, listId int, userId int, req web.CreateTaskRequest) web.TaskResponse {
@@ -115,15 +127,17 @@ func (s *taskServiceImpl) Delete(ctx context.Context, id int, userId int) {
 	s.Repo.Delete(ctx, id)
 }
 
-func (s *taskServiceImpl) AssignUser(ctx context.Context, taskId int, userId int, targetUserId int) {
+func (s *taskServiceImpl) AssignUser(ctx context.Context, taskId int, userId int, targetUserId int) []web.UserResponse {
 	s.assertMemberViaTask(ctx, taskId, userId)
 	s.UserRepo.FindById(ctx, targetUserId) // validasi target user exist
 	s.AssigneeRepo.Assign(ctx, taskId, targetUserId)
+	return s.AssigneeRepo.FindByTaskId(ctx, taskId)
 }
 
-func (s *taskServiceImpl) UnassignUser(ctx context.Context, taskId int, userId int, targetUserId int) {
+func (s *taskServiceImpl) UnassignUser(ctx context.Context, taskId int, userId int, targetUserId int) []web.UserResponse {
 	s.assertMemberViaTask(ctx, taskId, userId)
 	s.AssigneeRepo.Unassign(ctx, taskId, targetUserId)
+	return s.AssigneeRepo.FindByTaskId(ctx, taskId)
 }
 
 func (s *taskServiceImpl) FindAssignees(ctx context.Context, taskId int, userId int) []web.UserResponse {
