@@ -81,13 +81,13 @@ func (h *BoardHandler) InviteMember(c *gin.Context) {
 	err = h.Validate.Struct(req)
 	helper.PanicIfError(err)
 
-	h.Service.InviteMember(c.Request.Context(), boardId, userId, req) // BARU: tambah userId
-	c.JSON(http.StatusCreated, web.WebResponse{Code: http.StatusCreated, Status: "CREATED"})
+	result := h.Service.InviteMember(c.Request.Context(), boardId, userId, req) // BARU: tambah userId
+	c.JSON(http.StatusCreated, web.WebResponse{Code: http.StatusCreated, Status: "CREATED", Data: result})
 }
 
 func (h *BoardHandler) RemoveMember(c *gin.Context) {
 	boardId, _ := strconv.Atoi(c.Param("id"))
-	userId := c.MustGet("user_id").(int)         // BARU: ini si pemanggil (harus owner)
+	userId := c.MustGet("user_id").(int)               // BARU: ini si pemanggil (harus owner)
 	targetUserId, _ := strconv.Atoi(c.Param("userId")) // ini yang mau di-remove
 
 	h.Service.RemoveMember(c.Request.Context(), boardId, userId, targetUserId) // BARU: urutan param

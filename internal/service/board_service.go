@@ -17,7 +17,7 @@ type BoardService interface {
 	Update(ctx context.Context, id int, userId int, req web.UpdateBoardRequest) web.BoardResponse
 	Delete(ctx context.Context, id int, userId int)
 
-	InviteMember(ctx context.Context, boardId int, userId int, req web.InviteMemberRequest)
+	InviteMember(ctx context.Context, boardId int, userId int, req web.InviteMemberRequest) web.BoardMemberResponse
 	RemoveMember(ctx context.Context, boardId int, userId int, targetUserId int)
 	FindMembers(ctx context.Context, boardId int, userId int) []web.BoardMemberResponse
 }
@@ -82,7 +82,7 @@ func (s *boardServiceImpl) Delete(ctx context.Context, id int, userId int) {
 	s.BoardRepo.Delete(ctx, id)
 }
 
-func (s *boardServiceImpl) InviteMember(ctx context.Context, boardId int, userId int, req web.InviteMemberRequest) {
+func (s *boardServiceImpl) InviteMember(ctx context.Context, boardId int, userId int, req web.InviteMemberRequest) web.BoardMemberResponse {
 	s.assertOwner(ctx, boardId, userId)
 
 	user, found := s.UserRepo.FindByEmail(ctx, req.Email)
@@ -93,6 +93,14 @@ func (s *boardServiceImpl) InviteMember(ctx context.Context, boardId int, userId
 		panic(exception.NewConflictError("user is already a member of this board"))
 	}
 	s.MemberRepo.AddMember(ctx, boardId, user.ID, "member")
+
+	// BARU: return data member yang baru ditambahkan, biar FE bisa langsung update UI
+	return web.BoardMemberResponse{
+		UserID: user.ID,
+		Name:   user.Name,
+		Email:  user.Email,
+		Role:   "member",
+	}
 }
 
 func (s *boardServiceImpl) RemoveMember(ctx context.Context, boardId int, userId int, targetUserId int) {
