@@ -9,12 +9,13 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      FRONTEND_URL: http://localhost:5173
 
     services:
       postgres:
         image: postgres:16-alpine
         env:
-          FRONTEND_URL: http://localhost:5173
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: task_manager_test
