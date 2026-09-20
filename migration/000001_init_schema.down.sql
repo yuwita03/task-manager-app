@@ -1,0 +1,10 @@
+-- 000001_init_schema.down.sql
+
+DROP TABLE IF EXISTS task_labels;
+DROP TABLE IF EXISTS labels;
+DROP TABLE IF EXISTS task_assignees;
+DROP TABLE IF EXISTS tasks;
+DROP TABLE IF EXISTS lists;
+DROP TABLE IF EXISTS board_members;
+DROP TABLE IF EXISTS boards;
+DROP TABLE IF EXISTS users;
