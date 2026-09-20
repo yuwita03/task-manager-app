@@ -43,8 +43,12 @@ func NewRouter(db *pgxpool.Pool, cfg config.Config) *gin.Engine {
 	r := gin.Default()
 	r.Use(gin.Recovery())
 	r.Use(middleware.SecurityHeaders())
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://localhost:5173" // fallback default buat local/CI
+	}
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{os.Getenv("FRONTEND_URL")},
+		AllowOrigins:     []string{frontendURL},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
 		AllowHeaders:     []string{"Authorization", "Content-Type"},
 		AllowCredentials: true,
