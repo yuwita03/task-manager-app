@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 
+	"task-manager-app/internal/exception"
 	"task-manager-app/internal/helper"
 	"task-manager-app/internal/model/web"
 	"task-manager-app/internal/service"
@@ -46,6 +47,16 @@ func (h *AuthHandler) Login(c *gin.Context) {
 }
 
 func (h *AuthHandler) Me(c *gin.Context) {
-	userID, _ := c.Get("user_id")
-	c.JSON(http.StatusOK, web.WebResponse{Code: http.StatusOK, Status: "OK", Data: gin.H{"user_id": userID}})
+	userID, ok := c.Get("user_id")
+	if !ok {
+		helper.PanicIfError(exception.NewUnauthorizedError("user not authenticated"))
+	}
+
+	id, ok := userID.(int)
+	if !ok {
+		helper.PanicIfError(exception.NewUnauthorizedError("invalid user session"))
+	}
+
+	user := h.Service.GetCurrentUser(c.Request.Context(), id)
+	c.JSON(http.StatusOK, web.WebResponse{Code: http.StatusOK, Status: "OK", Data: user})
 }

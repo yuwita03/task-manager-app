@@ -81,8 +81,8 @@ func (h *BoardHandler) InviteMember(c *gin.Context) {
 	err = h.Validate.Struct(req)
 	helper.PanicIfError(err)
 
-	h.Service.InviteMember(c.Request.Context(), boardId, userId, req) // BARU: tambah userId
-	c.JSON(http.StatusCreated, web.WebResponse{Code: http.StatusCreated, Status: "CREATED"})
+	result := h.Service.InviteMember(c.Request.Context(), boardId, userId, req) // BARU: tambah userId
+	c.JSON(http.StatusCreated, web.WebResponse{Code: http.StatusCreated, Status: "CREATED", Data: result})
 }
 
 func (h *BoardHandler) RemoveMember(c *gin.Context) {
