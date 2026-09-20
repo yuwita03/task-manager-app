@@ -65,7 +65,8 @@ func (h *LabelHandler) AttachToTask(c *gin.Context) {
 	helper.PanicIfError(err)
 
 	h.Service.AttachToTask(c.Request.Context(), taskId, userId, req.LabelID) // BARU: tambah userId
-	c.JSON(http.StatusCreated, web.WebResponse{Code: http.StatusCreated, Status: "CREATED"})
+	result := h.Service.FindByTaskId(c.Request.Context(), taskId, userId) // BARU
+	c.JSON(http.StatusCreated, web.WebResponse{Code: http.StatusCreated, Status: "CREATED", Data: result})
 }
 
 func (h *LabelHandler) DetachFromTask(c *gin.Context) {
@@ -74,5 +75,6 @@ func (h *LabelHandler) DetachFromTask(c *gin.Context) {
 	labelId, _ := strconv.Atoi(c.Param("labelId"))
 
 	h.Service.DetachFromTask(c.Request.Context(), taskId, userId, labelId) // BARU: tambah userId
-	c.JSON(http.StatusOK, web.WebResponse{Code: http.StatusOK, Status: "OK"})
+	result := h.Service.FindByTaskId(c.Request.Context(), taskId, userId) // BARU
+	c.JSON(http.StatusOK, web.WebResponse{Code: http.StatusOK, Status: "OK", Data: result})
 }
