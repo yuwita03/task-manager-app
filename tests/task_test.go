@@ -152,6 +152,41 @@ func TestUpdateTaskSuccess(t *testing.T) {
 	assert.Equal(t, "done", data["status"])
 }
 
+func TestUpdateTaskDueDate_DateOnlyAccepted(t *testing.T) {
+	listID, token := setupUserBoardAndList(t)
+
+	db := setupTestDB()
+	defer db.Close()
+	router := setupRouter(db)
+
+	createReq := httptest.NewRequest(http.MethodPost, fmt.Sprintf("http://localhost:8080/api/lists/%d/tasks", listID),
+		strings.NewReader(`{"title":"Belajar Golang"}`))
+	createReq.Header.Add("Content-Type", "application/json")
+	createReq.Header.Add("Authorization", "Bearer "+token)
+	createRec := httptest.NewRecorder()
+	router.ServeHTTP(createRec, createReq)
+
+	createBody, _ := io.ReadAll(createRec.Result().Body)
+	var createRes map[string]interface{}
+	json.Unmarshal(createBody, &createRes)
+	taskID := int(createRes["data"].(map[string]interface{})["id"].(float64))
+
+	updateReq := httptest.NewRequest(http.MethodPut, fmt.Sprintf("http://localhost:8080/api/tasks/%d", taskID),
+		strings.NewReader(`{"title":"Belajar Golang","description":"","status":"todo","due_date":"2026-09-20"}`))
+	updateReq.Header.Add("Content-Type", "application/json")
+	updateReq.Header.Add("Authorization", "Bearer "+token)
+	updateRec := httptest.NewRecorder()
+	router.ServeHTTP(updateRec, updateReq)
+
+	assert.Equal(t, 200, updateRec.Result().StatusCode)
+
+	updateBody, _ := io.ReadAll(updateRec.Result().Body)
+	var updateRes map[string]interface{}
+	json.Unmarshal(updateBody, &updateRes)
+	data := updateRes["data"].(map[string]interface{})
+	assert.Equal(t, "2026-09-20T00:00:00Z", data["due_date"])
+}
+
 // test: hapus task yang gak ada, harus 404
 func TestDeleteTaskFailed_NotFound(t *testing.T) {
 	_, token := setupUserBoardAndList(t)
