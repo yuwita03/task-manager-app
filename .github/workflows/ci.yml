@@ -9,6 +9,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      FRONTEND_URL: http://localhost:5173
 
     services:
       postgres:
