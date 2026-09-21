@@ -30,13 +30,16 @@ func NewRouter(db *pgxpool.Pool, cfg config.Config) *gin.Engine {
 	listService := service.NewListService(listRepo, boardMemberRepo)
 	listHandler := handler.NewListHandler(listService)
 
+	// PINDAH ke sini, sebelum dipakai taskService
 	taskRepo := repository.NewTaskRepository(db)
 	taskAssigneeRepo := repository.NewTaskAssigneeRepository(db)
-	taskService := service.NewTaskService(taskRepo, listRepo, boardMemberRepo, taskAssigneeRepo, userRepo)
+	taskLabelRepo := repository.NewTaskLabelRepository(db) // BARU, dipindah dari bawah
+
+	taskService := service.NewTaskService(taskRepo, listRepo, boardMemberRepo, taskAssigneeRepo, taskLabelRepo, userRepo) // GANTI: tambah taskLabelRepo
 	taskHandler := handler.NewTaskHandler(taskService)
 
 	labelRepo := repository.NewLabelRepository(db)
-	taskLabelRepo := repository.NewTaskLabelRepository(db)
+	// taskLabelRepo udah dideklarasiin di atas, gak perlu declare lagi
 	labelService := service.NewLabelService(labelRepo, taskLabelRepo, taskRepo, listRepo, boardMemberRepo)
 	labelHandler := handler.NewLabelHandler(labelService)
 
@@ -45,7 +48,7 @@ func NewRouter(db *pgxpool.Pool, cfg config.Config) *gin.Engine {
 	r.Use(middleware.SecurityHeaders())
 	frontendURL := os.Getenv("FRONTEND_URL")
 	if frontendURL == "" {
-		frontendURL = "http://localhost:5173" // fallback default buat local/CI
+		frontendURL = "http://localhost:5173"
 	}
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{frontendURL},

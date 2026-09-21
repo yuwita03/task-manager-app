@@ -12,14 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// helper: bikin user + board, return boardID sama token
-func setupUserAndBoardOnly(t *testing.T) (boardID int, token string) {
-	db := setupTestDB()
-	defer db.Close()
-	truncateAll(db)
-	router := setupRouter(db)
-
-	// register
+func setupUserAndBoardOnly(router http.Handler) (int, string) {
 	registerReq := httptest.NewRequest(http.MethodPost, "http://localhost:8080/api/auth/register",
 		strings.NewReader(`{"name":"Yurico","email":"yurico@test.com","password":"password123"}`))
 	registerReq.Header.Add("Content-Type", "application/json")
@@ -29,9 +22,8 @@ func setupUserAndBoardOnly(t *testing.T) (boardID int, token string) {
 	body, _ := io.ReadAll(registerRec.Result().Body)
 	var registerRes map[string]interface{}
 	json.Unmarshal(body, &registerRes)
-	token = registerRes["data"].(map[string]interface{})["token"].(string)
+	token := registerRes["data"].(map[string]interface{})["token"].(string)
 
-	// create board
 	boardReq := httptest.NewRequest(http.MethodPost, "http://localhost:8080/api/boards",
 		strings.NewReader(`{"name":"Test Board"}`))
 	boardReq.Header.Add("Content-Type", "application/json")
@@ -42,18 +34,18 @@ func setupUserAndBoardOnly(t *testing.T) (boardID int, token string) {
 	boardBody, _ := io.ReadAll(boardRec.Result().Body)
 	var boardRes map[string]interface{}
 	json.Unmarshal(boardBody, &boardRes)
-	boardID = int(boardRes["data"].(map[string]interface{})["id"].(float64))
+	boardID := int(boardRes["data"].(map[string]interface{})["id"].(float64))
 
 	return boardID, token
 }
 
-// test: bikin label baru di board, harus sukses
 func TestCreateLabelSuccess(t *testing.T) {
-	boardID, token := setupUserAndBoardOnly(t)
-
-	db := setupTestDB()
+	db := setupTestDB()      // GANTI: db+router dibuat DULU
 	defer db.Close()
+	truncateAll(db)          // TAMBAH: ini juga sempat kelewat di semua test file ini
 	router := setupRouter(db)
+
+	boardID, token := setupUserAndBoardOnly(router) // GANTI: kirim router, bukan t
 
 	req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("http://localhost:8080/api/boards/%d/labels", boardID),
 		strings.NewReader(`{"name":"Urgent","color":"#FF0000"}`))
@@ -73,16 +65,16 @@ func TestCreateLabelSuccess(t *testing.T) {
 	assert.Equal(t, "#FF0000", data["color"])
 }
 
-// test: bikin label dengan warna salah format (bukan 7 karakter hex), harus gagal 400
 func TestCreateLabelFailed_InvalidColor(t *testing.T) {
-	boardID, token := setupUserAndBoardOnly(t)
-
 	db := setupTestDB()
 	defer db.Close()
+	truncateAll(db)
 	router := setupRouter(db)
 
+	boardID, token := setupUserAndBoardOnly(router)
+
 	req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("http://localhost:8080/api/boards/%d/labels", boardID),
-		strings.NewReader(`{"name":"Urgent","color":"red"}`)) // "red" bukan format hex
+		strings.NewReader(`{"name":"Urgent","color":"red"}`))
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+token)
 	rec := httptest.NewRecorder()
@@ -91,22 +83,20 @@ func TestCreateLabelFailed_InvalidColor(t *testing.T) {
 	assert.Equal(t, 400, rec.Result().StatusCode)
 }
 
-// test: get semua label di board, harus muncul label yang udah dibuat
 func TestGetLabelsByBoardSuccess(t *testing.T) {
-	boardID, token := setupUserAndBoardOnly(t)
-
 	db := setupTestDB()
 	defer db.Close()
+	truncateAll(db)
 	router := setupRouter(db)
 
-	// bikin 1 label dulu
+	boardID, token := setupUserAndBoardOnly(router) // GANTI: kirim router, bukan t
+
 	createReq := httptest.NewRequest(http.MethodPost, fmt.Sprintf("http://localhost:8080/api/boards/%d/labels", boardID),
 		strings.NewReader(`{"name":"Urgent","color":"#FF0000"}`))
 	createReq.Header.Add("Content-Type", "application/json")
 	createReq.Header.Add("Authorization", "Bearer "+token)
 	router.ServeHTTP(httptest.NewRecorder(), createReq)
 
-	// ambil semua label di board
 	getReq := httptest.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:8080/api/boards/%d/labels", boardID), nil)
 	getReq.Header.Add("Authorization", "Bearer "+token)
 	getRec := httptest.NewRecorder()
@@ -119,5 +109,5 @@ func TestGetLabelsByBoardSuccess(t *testing.T) {
 	json.Unmarshal(body, &res)
 	labels := res["data"].([]interface{})
 
-	assert.Len(t, labels, 1) // harus ada 1 label
+	assert.Len(t, labels, 1)
 }

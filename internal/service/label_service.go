@@ -14,8 +14,8 @@ type LabelService interface {
 	Create(ctx context.Context, boardId int, userId int, req web.CreateLabelRequest) web.LabelResponse
 	FindByBoardId(ctx context.Context, boardId int, userId int) []web.LabelResponse
 	Delete(ctx context.Context, id int, userId int)
-	AttachToTask(ctx context.Context, taskId int, userId int, labelId int)
-	DetachFromTask(ctx context.Context, taskId int, userId int, labelId int)
+	AttachToTask(ctx context.Context, taskId int, userId int, labelId int) []web.LabelResponse
+	DetachFromTask(ctx context.Context, taskId int, userId int, labelId int) []web.LabelResponse
 	FindByTaskId(ctx context.Context, taskId int, userId int) []web.LabelResponse
 }
 
@@ -69,15 +69,29 @@ func (s *labelServiceImpl) Delete(ctx context.Context, id int, userId int) {
 	s.Repo.Delete(ctx, id)
 }
 
-func (s *labelServiceImpl) AttachToTask(ctx context.Context, taskId int, userId int, labelId int) {
+func (s *labelServiceImpl) AttachToTask(ctx context.Context, taskId int, userId int, labelId int) []web.LabelResponse {
 	s.assertMemberViaTask(ctx, taskId, userId)
 	s.Repo.FindById(ctx, labelId) // validasi label exist
 	s.TaskLabel.Attach(ctx, taskId, labelId)
+
+	labels := s.TaskLabel.FindByTaskId(ctx, taskId)
+	responses := make([]web.LabelResponse, 0, len(labels))
+	for _, label := range labels {
+		responses = append(responses, toLabelResponse(label))
+	}
+	return responses
 }
 
-func (s *labelServiceImpl) DetachFromTask(ctx context.Context, taskId int, userId int, labelId int) {
+func (s *labelServiceImpl) DetachFromTask(ctx context.Context, taskId int, userId int, labelId int) []web.LabelResponse {
 	s.assertMemberViaTask(ctx, taskId, userId)
 	s.TaskLabel.Detach(ctx, taskId, labelId)
+
+	labels := s.TaskLabel.FindByTaskId(ctx, taskId)
+	responses := make([]web.LabelResponse, 0, len(labels))
+	for _, label := range labels {
+		responses = append(responses, toLabelResponse(label))
+	}
+	return responses
 }
 
 func (s *labelServiceImpl) FindByTaskId(ctx context.Context, taskId int, userId int) []web.LabelResponse {

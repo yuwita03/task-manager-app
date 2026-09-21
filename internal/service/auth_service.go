@@ -18,6 +18,7 @@ import (
 type AuthService interface {
 	Register(ctx context.Context, req web.RegisterRequest) web.AuthResponse
 	Login(ctx context.Context, req web.LoginRequest) web.AuthResponse
+	GetCurrentUser(ctx context.Context, userID int) web.UserResponse
 }
 
 type authServiceImpl struct {
@@ -75,6 +76,16 @@ func (s *authServiceImpl) Login(ctx context.Context, req web.LoginRequest) web.A
 			CreatedAt: user.CreatedAt.Format(time.RFC3339),
 		},
 		Token: token,
+	}
+}
+
+func (s *authServiceImpl) GetCurrentUser(ctx context.Context, userID int) web.UserResponse {
+	user := s.Repo.FindById(ctx, userID)
+	return web.UserResponse{
+		ID:        user.ID,
+		Name:      user.Name,
+		Email:     user.Email,
+		CreatedAt: user.CreatedAt.Format(time.RFC3339),
 	}
 }
 
