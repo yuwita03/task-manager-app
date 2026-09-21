@@ -2,12 +2,12 @@ package test
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"fmt"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -31,7 +31,7 @@ func TestRegisterSuccess(t *testing.T) {
 	body, _ := io.ReadAll(response.Body)
 	var responseBody map[string]interface{}
 	json.Unmarshal(body, &responseBody)
-	fmt.Println(responseBody) 
+	fmt.Println(responseBody)
 
 	assert.Equal(t, 201, int(responseBody["code"].(float64)))
 	assert.Equal(t, "CREATED", responseBody["status"])
@@ -142,4 +142,37 @@ func TestLoginFailed_WrongPassword(t *testing.T) {
 
 	response := recorder.Result()
 	assert.Equal(t, 401, response.StatusCode)
+}
+
+func TestMeReturnsCurrentUserProfile(t *testing.T) {
+	db := setupTestDB()
+	defer db.Close()
+	truncateAll(db)
+	router := setupRouter(db)
+
+	registerRequest := httptest.NewRequest(http.MethodPost, "http://localhost:8080/api/auth/register",
+		strings.NewReader(`{"name":"Yurico","email":"yurico@test.com","password":"password123"}`))
+	registerRequest.Header.Add("Content-Type", "application/json")
+	registerRec := httptest.NewRecorder()
+	router.ServeHTTP(registerRec, registerRequest)
+
+	body, _ := io.ReadAll(registerRec.Result().Body)
+	var registerRes map[string]interface{}
+	json.Unmarshal(body, &registerRes)
+	token := registerRes["data"].(map[string]interface{})["token"].(string)
+
+	meReq := httptest.NewRequest(http.MethodGet, "http://localhost:8080/api/auth/me", nil)
+	meReq.Header.Add("Authorization", "Bearer "+token)
+	meRec := httptest.NewRecorder()
+	router.ServeHTTP(meRec, meReq)
+
+	assert.Equal(t, 200, meRec.Result().StatusCode)
+
+	meBody, _ := io.ReadAll(meRec.Result().Body)
+	var meRes map[string]interface{}
+	json.Unmarshal(meBody, &meRes)
+	meData := meRes["data"].(map[string]interface{})
+
+	assert.Equal(t, "Yurico", meData["name"])
+	assert.Equal(t, "yurico@test.com", meData["email"])
 }

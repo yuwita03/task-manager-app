@@ -47,5 +47,6 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 func (h *AuthHandler) Me(c *gin.Context) {
 	userID, _ := c.Get("user_id")
-	c.JSON(http.StatusOK, web.WebResponse{Code: http.StatusOK, Status: "OK", Data: gin.H{"user_id": userID}})
+	result := h.Service.GetCurrentUser(c.Request.Context(), userID.(int))
+	c.JSON(http.StatusOK, web.WebResponse{Code: http.StatusOK, Status: "OK", Data: result})
 }
