@@ -100,8 +100,8 @@ func (h *TaskHandler) AssignUser(c *gin.Context) {
 	err = h.Validate.Struct(req)
 	helper.PanicIfError(err)
 
-	h.Service.AssignUser(c.Request.Context(), taskId, userId, req.UserID) // BARU: tambah userId
-	c.JSON(http.StatusCreated, web.WebResponse{Code: http.StatusCreated, Status: "CREATED"})
+	result := h.Service.AssignUser(c.Request.Context(), taskId, userId, req.UserID) // BARU: tambah userId
+	c.JSON(http.StatusCreated, web.WebResponse{Code: http.StatusCreated, Status: "CREATED", Data: result})
 }
 
 func (h *TaskHandler) UnassignUser(c *gin.Context) {
@@ -109,8 +109,8 @@ func (h *TaskHandler) UnassignUser(c *gin.Context) {
 	userId := c.MustGet("user_id").(int)               // BARU: si pemanggil
 	targetUserId, _ := strconv.Atoi(c.Param("userId")) // yang mau di-unassign
 
-	h.Service.UnassignUser(c.Request.Context(), taskId, userId, targetUserId) // BARU: urutan param
-	c.JSON(http.StatusOK, web.WebResponse{Code: http.StatusOK, Status: "OK"})
+	result := h.Service.UnassignUser(c.Request.Context(), taskId, userId, targetUserId) // BARU: urutan param
+	c.JSON(http.StatusOK, web.WebResponse{Code: http.StatusOK, Status: "OK", Data: result})
 }
 
 func (h *TaskHandler) FindAssignees(c *gin.Context) {
