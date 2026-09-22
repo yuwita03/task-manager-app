@@ -90,7 +90,7 @@ func (h *TaskHandler) Delete(c *gin.Context) {
 
 func (h *TaskHandler) AssignUser(c *gin.Context) {
 	taskId, _ := strconv.Atoi(c.Param("id"))
-	userId := c.MustGet("user_id").(int) // BARU: si pemanggil
+	userId := c.MustGet("user_id").(int)
 
 	var req struct {
 		UserID int `json:"user_id" validate:"required"`
@@ -100,17 +100,17 @@ func (h *TaskHandler) AssignUser(c *gin.Context) {
 	err = h.Validate.Struct(req)
 	helper.PanicIfError(err)
 
-	h.Service.AssignUser(c.Request.Context(), taskId, userId, req.UserID) // BARU: tambah userId
-	c.JSON(http.StatusCreated, web.WebResponse{Code: http.StatusCreated, Status: "CREATED"})
+	result := h.Service.AssignUser(c.Request.Context(), taskId, userId, req.UserID) // GANTI: tangkap return value
+	c.JSON(http.StatusCreated, web.WebResponse{Code: http.StatusCreated, Status: "CREATED", Data: result}) // GANTI: kirim Data
 }
 
 func (h *TaskHandler) UnassignUser(c *gin.Context) {
 	taskId, _ := strconv.Atoi(c.Param("id"))
-	userId := c.MustGet("user_id").(int)               // BARU: si pemanggil
-	targetUserId, _ := strconv.Atoi(c.Param("userId")) // yang mau di-unassign
+	userId := c.MustGet("user_id").(int)
+	targetUserId, _ := strconv.Atoi(c.Param("userId"))
 
-	h.Service.UnassignUser(c.Request.Context(), taskId, userId, targetUserId) // BARU: urutan param
-	c.JSON(http.StatusOK, web.WebResponse{Code: http.StatusOK, Status: "OK"})
+	result := h.Service.UnassignUser(c.Request.Context(), taskId, userId, targetUserId) // GANTI: tangkap return value
+	c.JSON(http.StatusOK, web.WebResponse{Code: http.StatusOK, Status: "OK", Data: result}) // GANTI: kirim Data
 }
 
 func (h *TaskHandler) FindAssignees(c *gin.Context) {
